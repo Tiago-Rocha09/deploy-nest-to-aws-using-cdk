@@ -2,6 +2,7 @@
 import * as cdk from "aws-cdk-lib/core";
 import { EcrStack } from "../lib/ecr-stack";
 import { VpcStack } from "../lib/vpc-stack";
+import { ClusterStack } from "../lib/cluster-stack";
 
 const app = new cdk.App();
 
@@ -12,10 +13,18 @@ const tagsInfra = {
 };
 
 const env: cdk.Environment = {
-  account: "826997462744",
-  region: "us-east-1",
+  account: process.env.AWS_ACCOUNT_ID,
+  region: process.env.AWS_REGION,
 };
 
 const ecrStack = new EcrStack(app, "Ecr", { tags: tagsInfra, env });
 
 const vpcStack = new VpcStack(app, "Vpc", { tags: tagsInfra, env });
+
+const clusterStack = new ClusterStack(app, "Cluster", {
+  tags: tagsInfra,
+  env,
+  vpc: vpcStack.vpc,
+});
+
+clusterStack.addDependency(vpcStack);
