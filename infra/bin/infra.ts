@@ -4,6 +4,7 @@ import { EcrStack } from "../lib/ecr-stack";
 import { VpcStack } from "../lib/vpc-stack";
 import { ClusterStack } from "../lib/cluster-stack";
 import { LoadBalancerStack } from "../lib/lb-stack";
+import { ProductsServiceStack } from "../lib/productsService-stack";
 
 const app = new cdk.App();
 
@@ -36,3 +37,23 @@ const clusterStack = new ClusterStack(app, "Cluster", {
 });
 
 clusterStack.addDependency(vpcStack);
+
+const tagsProductsService = {
+  cost: "ProductsService",
+  team: "Tiago",
+};
+
+const productsServiceStack = new ProductsServiceStack(app, "ProductsService", {
+  tags: tagsProductsService,
+  env,
+  alb: lbStack.alb,
+  nlb: lbStack.nlb,
+  cluster: clusterStack.cluster,
+  repository: ecrStack.productServiceRepository,
+  vpc: vpcStack.vpc,
+});
+
+productsServiceStack.addDependency(clusterStack);
+productsServiceStack.addDependency(lbStack);
+productsServiceStack.addDependency(ecrStack);
+productsServiceStack.addDependency(vpcStack);
