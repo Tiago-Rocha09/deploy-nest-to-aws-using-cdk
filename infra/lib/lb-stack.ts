@@ -11,17 +11,10 @@ interface LbStackProps extends StackProps {
 }
 
 export class LoadBalancerStack extends Stack {
-  readonly nlb: elbv2.NetworkLoadBalancer;
   readonly alb: elbv2.ApplicationLoadBalancer;
 
   constructor(scope: Construct, id: string, props: LbStackProps) {
     super(scope, id, props);
-
-    this.nlb = new elbv2.NetworkLoadBalancer(this, "ECommerceNLB", {
-      vpc: props.vpc,
-      loadBalancerName: "ECommerceNLB",
-      internetFacing: false,
-    });
 
     this.alb = new elbv2.ApplicationLoadBalancer(this, "ECommerceALB", {
       vpc: props.vpc,

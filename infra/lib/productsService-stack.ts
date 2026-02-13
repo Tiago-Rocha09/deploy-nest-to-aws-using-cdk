@@ -15,7 +15,6 @@ interface ProductsServiceStackProps extends StackProps {
   vpc: ec2.Vpc;
   cluster: ecs.Cluster;
   alb: elbv2.ApplicationLoadBalancer;
-  nlb: elbv2.NetworkLoadBalancer;
   repository: ecr.Repository;
 }
 
@@ -45,7 +44,7 @@ export class ProductsServiceStack extends Stack {
     });
 
     taskDefinition.addContainer("ProductsServiceContainer", {
-      image: ecs.ContainerImage.fromEcrRepository(props.repository, "1.0.0"),
+      image: ecs.ContainerImage.fromEcrRepository(props.repository, "1.0.4"),
       containerName: "productsService",
       portMappings: [{ containerPort: 8080, protocol: ecs.Protocol.TCP }],
       logging: logDriver,
@@ -66,9 +65,10 @@ export class ProductsServiceStack extends Stack {
 
     props.repository.grantPull(taskDefinition.taskRole);
 
-    service.connections.securityGroups[0].addIngressRule(
-      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+    service.connections.allowFrom(
+      props.alb,
       ec2.Port.tcp(8080),
+      "Allow traffic from ALB",
     );
 
     albListener.addTargets("ProductsServiceALBTarget", {
@@ -83,33 +83,6 @@ export class ProductsServiceStack extends Stack {
         port: "8080",
         timeout: Duration.seconds(10),
         path: "/health",
-      },
-    });
-
-    const nlbListener = props.nlb.addListener("ProductsServiceNLBListener", {
-      port: 8080,
-      protocol: elbv2.Protocol.TCP,
-    });
-
-    nlbListener.addTargets("ProductsServiceNLBTarget", {
-      targetGroupName: "productsServiceNLB",
-      port: 8080,
-      protocol: elbv2.Protocol.TCP,
-      targets: [
-        service.loadBalancerTarget({
-          containerName: "productsService",
-          containerPort: 8080,
-          protocol: ecs.Protocol.TCP,
-        }),
-      ],
-      healthCheck: {
-        protocol: elbv2.Protocol.HTTP,
-        path: "/health",
-        port: "8080",
-        interval: Duration.seconds(30),
-        timeout: Duration.seconds(10),
-        healthyThresholdCount: 3,
-        unhealthyThresholdCount: 3,
       },
     });
   }
